@@ -91,7 +91,7 @@ $ ros2 launch cugo_ros2_control cugov3_ros2_control_launch.py
 ~~~
 # RaspberryPiPicoの権限付与例
 # お客様環境に合わせてコマンドを実行してください。
-$ sudo chmod 775 /dev/ttyACM0
+$ sudo chmod 777 /dev/ttyACM0
 
 # launch ファイルを実行
 $ ros2 launch cugo_ros2_control cugov4_ros2_control_launch.py
@@ -103,7 +103,7 @@ $ ros2 launch cugo_ros2_control cugov4_ros2_control_launch.py
 ~~~
 # RaspberryPiPicoの権限付与例
 # お客様環境に合わせてコマンドを実行してください。
-$ sudo chmod 775 /dev/ttyACM0
+$ sudo chmod 777 /dev/ttyACM0
 
 # launch ファイルを実行
 $ ros2 launch cugo_ros2_control cugov3i_ros2_control_launch.py
