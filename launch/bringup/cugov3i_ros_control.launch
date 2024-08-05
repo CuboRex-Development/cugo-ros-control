@@ -1,0 +1,35 @@
+<launch>
+    <node name="cugo_ros_control" pkg="cugo_ros_control" type="cugo_ros_control" >
+        <param name="ODOMETRY_DISPLAY" value="true" />
+        <param name="PARAMETERS_DISPLAY" value="false" />
+        <param name="TARGET_RPM_DISPLAY" value="true" />
+        <param name="SENT_PACKET_DISPLAY" value="false" />
+        <param name="RECV_PACKET_DISPLAY" value="true" />
+        <param name="READ_DATA_DISPLAY" value="true" />
+
+        <param name="timeout" value="0.05" />
+        <param name="wheel_radius_l" value="0.03858" />
+        <param name="wheel_radius_r" value="0.03858" />
+        <param name="tread" value="0.460" />
+        <param name="reduction_ratio" value="15.0" />
+        <param name="encoder_resolution" value="24" />
+        <param name="encoder_max" value="2147483647" />
+        <param name="source_port" value="8888" />
+        <param name="arduino_port" value="8888" />
+        <param name="arduino_addr" value="192.168.11.216" />
+        <param name="odom_frame_id" value="odom" />
+        <param name="odom_child_frame_id" value="base_footprint" />
+        <param name="abnormal_translation_acc_limit" value="10.0" />
+        <param name="abnormal_angular_acc_limit" value="7.85" />
+        <param name="comm_type" value="USB" />
+        <param name="serial_port" value="/dev/ttyACM0" />
+        <param name="serial_baudrate" value="115200" />
+        <rosparam>
+          pose_covariance_diagonal: [0.001, 0.001, 1000000.0, 1000000.0, 1000000.0, 1000.0]
+        </rosparam>
+        <rosparam>
+          twist_covariance_diagonal: [0.001, 0.001, 1000000.0, 1000000.0, 1000000.0, 1000.0]
+        </rosparam>
+	<remap from="/cugo_ros_control/odom" to="/odom" />
+    </node>
+</launch>

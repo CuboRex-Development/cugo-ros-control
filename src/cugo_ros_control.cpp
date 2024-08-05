@@ -14,8 +14,6 @@ CugoController::CugoController(ros::NodeHandle nh) : loop_rate(10)
   nh.param("READ_DATA_DISPLAY", READ_DATA_DISPLAY, true);
 
   // grab the parameters
-  //nh.param("device", device_name, std::string("/dev/Arduino"));
-  //nh.param("baudrate", baudrate, 115200);
   nh.param("timeout", timeout, (float)0.05); // default: 10Hz
   nh.param("wheel_radius_l", wheel_radius_l, (float)0.03858); // default: CuGO V3
   nh.param("wheel_radius_r", wheel_radius_r, (float)0.03858); // default: CuGO V3
@@ -31,6 +29,10 @@ CugoController::CugoController(ros::NodeHandle nh) : loop_rate(10)
 
   nh.param("abnormal_translation_acc_limit", abnormal_translation_acc_limit, (float)10.0);
   nh.param("abnormal_angular_acc_limit", abnormal_angular_acc_limit, (float)(10.0*M_PI/4));
+
+  nh.param("comm_type", comm_type, std::string("UDP"));
+  nh.param("serial_port", serial_port, std::string("/dev/ttyACM0"));
+  nh.param("serial_baudrate", serial_baudrate, 115200);
 
   // get and check params for covariances
   nh.getParam("pose_covariance_diagonal", pose_cov_arry);
@@ -751,6 +753,18 @@ void CugoController::init_time()
   subscribe_time = ros::Time::now();
 }
 
+void CugoController::init_communication()
+{
+  if(comm_type == "UDP")
+  {
+    init_UDP();
+  }
+  else if(comm_type == "USB")
+  {
+    init_serial();
+  }
+}
+
 void CugoController::init_UDP()
 {
   sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -843,10 +857,23 @@ void CugoController::recv_base_encoder_count()
   {
     std::cout << "RECEIVING BASE ENCODER COUNT..." << std::endl;
     send_initial_cmd_MCU();
-    serial_recv_base_count_MCU();
+    recv_base_count_MCU();
+    //serial_recv_base_count_MCU();
     loop_rate.sleep();
   }
   std::cout << "FINISHED RECEIVING BASE ENCODER COUNT!" << std::endl;
+}
+
+void CugoController::close_communication()
+{
+  if(comm_type == "UDP")
+  {
+    close_UDP();
+  }
+  else if(comm_type == "USB")
+  {
+    close_serial();
+  }
 }
 
 void CugoController::close_UDP()
@@ -998,10 +1025,29 @@ void CugoController::check_stop_cmd_vel()
 
 void CugoController::send_rpm_MCU()
 {
-  serial_send_cmd(); // binary
+  if(comm_type == "UDP")
+  {
+    UDP_send_cmd(); // binary
+  }
+  else if(comm_type == "USB")
+  {
+    serial_send_cmd();
+  }
 }
 
 void CugoController::recv_count_MCU()
+{
+  if(comm_type == "UDP")
+  {
+    UDP_recv_count_MCU();
+  }
+  else if(comm_type == "USB")
+  {
+    serial_recv_count_MCU();
+  }
+}
+
+void CugoController::UDP_recv_count_MCU()
 {
   unsigned char buf[UDP_HEADER_SIZE + UDP_BUFF_SIZE];
   // バッファの初期化
@@ -1144,11 +1190,29 @@ void CugoController::serial_recv_count_MCU()
 
 void CugoController::send_initial_cmd_MCU()
 {
-  // TODO 将来的にUDP通信とシリアル通信を選択可能とした時に、serial_send_initial_cmdをここで呼ぶ
-  serial_send_initial_cmd();
+  if(comm_type == "UDP")
+  {
+    UDP_send_initial_cmd();
+  }
+  else if(comm_type == "USB")
+  {
+    serial_send_initial_cmd();
+  }
 }
 
 void CugoController::recv_base_count_MCU()
+{
+  if(comm_type == "UDP")
+  {
+    UDP_recv_base_count_MCU();
+  }
+  else if(comm_type == "USB")
+  {
+    serial_recv_base_count_MCU();
+  }
+}
+
+void CugoController::UDP_recv_base_count_MCU()
 {
   unsigned char buf[UDP_HEADER_SIZE + UDP_BUFF_SIZE];
   // バッファの初期化
@@ -1316,7 +1380,8 @@ void CugoController::odom_publish()
 
 void CugoController::node_shutdown()
 {
-  close_UDP();
+  close_communication();
+  //close_UDP();
   cmd_vel_sub.shutdown();
   ros::shutdown();
 }
@@ -1332,7 +1397,7 @@ int main(int argc, char **argv)
 
   try
   {
-    node.init_serial();
+    node.init_communication();
     node.recv_base_encoder_count();
 
     while (ros::ok())
@@ -1341,7 +1406,7 @@ int main(int argc, char **argv)
       node.check_stop_cmd_vel();
       node.twist2rpm();
       node.send_rpm_MCU();
-      node.serial_recv_count_MCU();
+      node.recv_count_MCU();
       node.count2twist();
       node.odom_publish();
       ros::spinOnce();

@@ -111,9 +111,6 @@ class CugoController {
     bool abnormal_acc_limit_over_flag = false;
     bool encoder_first_recv_flag = false;
 
-    // serial
-    //bool start_serial_comm = false;
-
     int recv_err_count = 0;
     int checksum_err_count = 0;
     int diff_err_count = 0;
@@ -178,15 +175,12 @@ class CugoController {
     void view_target_rpm();
     void view_read_data();
 
-    //void init_serial();
     void init_time();
     void init_UDP();
     void init_serial();
     void close_UDP();
     void close_serial();
-    //void serial_reciev_state();
     void count2twist();
-    //void calc_count_to_vec();
     void twist2rpm();
     void check_failsafe();
     void check_stop_cmd_vel();
@@ -202,6 +196,11 @@ class CugoController {
     void recv_base_count_MCU();
     void serial_recv_base_count_MCU();
     void recv_base_encoder_count();
+
+    void init_communication();
+    void close_communication();
+    void UDP_recv_count_MCU();
+    void UDP_recv_base_count_MCU();
 };
 
 #endif
