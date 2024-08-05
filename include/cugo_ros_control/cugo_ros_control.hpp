@@ -22,9 +22,13 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
+#include <termios.h>
+#include <fcntl.h>
 
 #define UDP_BUFF_SIZE 64
+#define SERIAL_BUFF_SIZE 64
 #define UDP_HEADER_SIZE 8
+#define SERIAL_HEADER_SIZE 8
 
 #define TARGET_RPM_L_PTR 0
 #define TARGET_RPM_R_PTR 4
@@ -75,6 +79,14 @@ class CugoController {
     XmlRpc::XmlRpcValue twist_cov_arry;
 
     int stop_motor_time = 500; //NavigationやコントローラからSubscriberできなかったときにモータを>止めるまでの時間(ms)
+
+    // シリアル通信系
+    std::string comm_type;
+    std::string serial_port;
+    int serial_baudrate;
+    int serial_fd;
+    unsigned char serial_buff[256];
+    std::deque<unsigned char> serial_msg;
 
     float vector_v       = 0.0;
     float vector_omega   = 0.0;
@@ -134,6 +146,7 @@ class CugoController {
     void calc_odom();
     //void serial_send_cmd();
     void create_UDP_packet(unsigned char*, CugoController::UdpHeader*, unsigned char*);
+    void create_serial_packet(unsigned char*, CugoController::UdpHeader*, unsigned char*);
     void write_float_to_buf(unsigned char*, const int, float);
     void write_int_to_buf(unsigned char*, const int, int);
     void write_bool_to_buf(unsigned char*, const int, bool);
@@ -143,8 +156,11 @@ class CugoController {
     uint16_t read_uint16_t_from_header(unsigned char*, const int);
     void UDP_send_string_cmd();
     void UDP_send_cmd();
+    void serial_send_cmd();
     void publish();
     void check_communication();
+    size_t encode_COBS(const void *data, size_t length, uint8_t *buffer);
+    size_t decode_COBS(const uint8_t *buffer, size_t length, void *data);
 
   public:
     ros::Rate loop_rate;
@@ -165,7 +181,9 @@ class CugoController {
     //void init_serial();
     void init_time();
     void init_UDP();
+    void init_serial();
     void close_UDP();
+    void close_serial();
     //void serial_reciev_state();
     void count2twist();
     //void calc_count_to_vec();
@@ -174,12 +192,15 @@ class CugoController {
     void check_stop_cmd_vel();
     void send_rpm_MCU();
     void recv_count_MCU();
+    void serial_recv_count_MCU();
     void odom_publish();
     void node_shutdown();
 
     void UDP_send_initial_cmd();
+    void serial_send_initial_cmd();
     void send_initial_cmd_MCU();
     void recv_base_count_MCU();
+    void serial_recv_base_count_MCU();
     void recv_base_encoder_count();
 };
 
