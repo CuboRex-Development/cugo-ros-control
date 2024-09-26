@@ -900,9 +900,8 @@ void CugoController::close_communication()
 void CugoController::count2twist()
 {
   float diff_time = (recv_time - last_recv_time).seconds();
-  //std::cout << "diff_time: " << diff_time << std::endl;
   // 正常時のフロー
-  if (diff_time > 0.0 && diff_time < 1.0)
+  if (diff_time > 0.0 && diff_time < 1.0 && recv_success)
   {
     int count_diff_l = recv_encoder_l - last_recv_encoder_l;
     int count_diff_r = recv_encoder_r - last_recv_encoder_r;
@@ -1067,12 +1066,14 @@ void CugoController::UDP_recv_count_MCU()
     if (recv_checksum != calc_checksum)
     {
       RCLCPP_ERROR(this->get_logger(), "Packet integrity check failed");
+      recv_success = false;
     }
     // 正常時のフロー
     else
     {
       // エラーカウントのリセット
       checksum_err_count = 0;
+      recv_success = true;
 
       // ベクトル計算用の時間を計測
       last_recv_time = recv_time;
@@ -1153,12 +1154,14 @@ void CugoController::serial_recv_count_MCU()
     if (recv_checksum != calc_checksum)
     {
       RCLCPP_ERROR(this->get_logger(), "Packet integrity check failed");
+      recv_success = false;
     }
     // 正常時のフロー
     else
     {
       // エラーカウントのリセット
       checksum_err_count = 0;
+      recv_success = true;
 
       // ベクトル計算用の時間を計測
       last_recv_time = recv_time;
@@ -1182,6 +1185,7 @@ void CugoController::serial_recv_count_MCU()
 
 void CugoController::recv_count_MCU()
 {
+  recv_success = false; // 正常受信確認フラグを初期化
   if(comm_type == "UDP")
   {
     UDP_recv_count_MCU();
@@ -1375,11 +1379,11 @@ void CugoController::recv_base_count_MCU()
 void CugoController::odom_publish()
 {
   //RCLCPP_INFO(this->get_logger(), "Publishing odometry" );
-  if (!abnormal_acc_limit_over_flag)
+  if (!abnormal_acc_limit_over_flag && recv_success)
   {
     calc_odom();
+    publish();
   }
-  publish();
 }
 
 void CugoController::node_shutdown()
@@ -1394,7 +1398,6 @@ int main(int argc, char * argv[])
   // rclcppの初期化
   rclcpp::init(argc, argv);
   std::shared_ptr<CugoController> node = std::make_shared<CugoController>();
-  //std::cout << "cugo_ros2_control start!" << std::endl;
 
   node->init_time();
 

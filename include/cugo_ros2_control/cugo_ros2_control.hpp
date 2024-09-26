@@ -83,6 +83,7 @@ class CugoController : public rclcpp::Node
     int source_port = 8888;
     std::string odom_frame_id;
     std::string odom_child_frame_id;
+    bool recv_success = false;
 
     float abnormal_translation_acc_limit = 10.0;
     float abnormal_angular_acc_limit = 10.0 * M_PI / 4;
