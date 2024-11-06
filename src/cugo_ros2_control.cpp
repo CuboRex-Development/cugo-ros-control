@@ -1,4 +1,5 @@
 #include "cugo_ros2_control/cugo_ros2_control.hpp"
+#include "cugo_ros2_control/COBS.h"
 
 CugoController::CugoController()
 : Node("cugo_ros2_control"), loop_rate(10)
@@ -325,7 +326,9 @@ void CugoController::serial_send_cmd()
   UDP_send_time = this->get_clock()->now();
   unsigned char* cobs_packet = new unsigned char[header.length+3];
   // 送信データをCOBS形式にエンコード
-  int cobs_len = encode_COBS(packet, header.length, cobs_packet);
+  //int cobs_len = encode_COBS(packet, header.length, cobs_packet);
+  size_t cobs_len = COBS::encode(reinterpret_cast<const uint8_t*>(packet), header.length, cobs_packet);
+
   cobs_packet[header.length+1] = 0;
   int send_len = write(serial_fd, cobs_packet, cobs_len+1);
 
@@ -414,7 +417,9 @@ void CugoController::serial_send_initial_cmd()
   UDP_send_time = this->get_clock()->now();
   unsigned char* cobs_packet = new unsigned char[header.length+3];
   // 送信データをCOBS形式にエンコード
-  int cobs_len = encode_COBS(packet, header.length, cobs_packet);
+  //int cobs_len = encode_COBS(packet, header.length, cobs_packet);
+  size_t cobs_len = COBS::encode(reinterpret_cast<const uint8_t*>(packet), header.length, cobs_packet);
+
   cobs_packet[header.length+1] = 0;
   int send_len = write(serial_fd, cobs_packet, cobs_len+1);
 
@@ -1094,9 +1099,12 @@ void CugoController::UDP_recv_count_MCU()
 }
 
 void CugoController::serial_recv_count_MCU()
+//:TODO ここでrecv timeの更新、フラグ管理では？？？
+//:TODO 送信バッファのサイズが固定なのおかしくない？
+//:TODO packetserailの送信側とバッファサイズの定義がことなるのでは？固定長じゃないんじゃね？
 {
-  unsigned char cobs_buf[SERIAL_HEADER_SIZE + SERIAL_BUFF_SIZE + 2];
-  unsigned char buf[SERIAL_HEADER_SIZE + SERIAL_BUFF_SIZE];
+  unsigned char cobs_buf[SERIAL_HEADER_SIZE + SERIAL_BUFF_SIZE + 2]; // TODO::これがミスじゃね？
+  unsigned char buf[SERIAL_HEADER_SIZE + SERIAL_BUFF_SIZE]; // TODO: これがミスじゃね？
   bool serial_recv_flag = false;
 
   // バッファの初期化
@@ -1131,7 +1139,9 @@ void CugoController::serial_recv_count_MCU()
   else serial_recv_flag = false;
 
   // 受信データをCOBSにデコード
-  int recv_len = decode_COBS(cobs_buf, sizeof(cobs_buf), buf);
+  //int recv_len = decode_COBS(cobs_buf, sizeof(cobs_buf), buf);
+  size_t recv_len = COBS::decode(cobs_buf, sizeof(cobs_buf), reinterpret_cast<uint8_t*>(buf));
+
   // std::cout << "recv_len: " << recv_len << std::endl;
   // 受信バッファがない場合
   if (recv_len <= 0)
@@ -1162,7 +1172,9 @@ void CugoController::serial_recv_count_MCU()
 
       // ベクトル計算用の時間を計測
       last_recv_time = recv_time;
-      recv_time = this->get_clock()->now();
+      recv_time = this->get_clock()->now(); // TODO: ここで更新するかどうか.
+
+      // TODO: ここで受信時間を更新しているくせにpublishしていないことがある
       // UDPの一往復の時間を測定
       //std::cout << "UDP time:" << (recv_time - UDP_send_time).seconds() << std::endl;
 
@@ -1304,7 +1316,9 @@ void CugoController::serial_recv_base_count_MCU()
   else serial_recv_flag = false;
 
   // 受信データをCOBSにデコード
-  int recv_len = decode_COBS(cobs_buf, sizeof(cobs_buf), buf);
+  //int recv_len = decode_COBS(cobs_buf, sizeof(cobs_buf), buf);
+  size_t recv_len = COBS::decode(cobs_buf, sizeof(cobs_buf), reinterpret_cast<uint8_t*>(buf));
+
   // std::cout << "recv_len: " << recv_len << std::endl;
   // 受信バッファがない場合
   if (recv_len <= 0)
@@ -1379,7 +1393,7 @@ void CugoController::odom_publish()
   {
     calc_odom();
   }
-  publish();
+  publish(); //TODO: 計算指定内にも関わらずpublishしている
 }
 
 void CugoController::node_shutdown()
