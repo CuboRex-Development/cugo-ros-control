@@ -479,6 +479,13 @@ void CugoController::publish()
   odom.twist.twist.linear.x = odom_twist_x;
   odom.twist.twist.linear.y = odom_twist_y;
   odom.twist.twist.angular.z = odom_twist_yaw;
+  RCLCPP_INFO(this->get_logger(), "twist.x: %f", odom.twist.twist.linear.x);
+
+  if(odom.twist.twist.linear.x >= 1.0){
+      std::cout << "linear.x value so big... " << odom.twist.twist.linear.x << std::endl;
+      std::cout << "angular.z value so big... " << odom.twist.twist.angular.z << std::endl;
+      RCLCPP_ERROR(this->get_logger(), "verry big value...");
+  }
 
   // set the twist covariance
   odom.twist.covariance = {
@@ -1149,7 +1156,7 @@ void CugoController::serial_recv_count_MCU()
 
     uint16_t recv_checksum = read_uint16_t_from_header(buf, RECV_HEADER_CHECKSUM_PTR);
     uint16_t calc_checksum = calculate_checksum(buf, SERIAL_HEADER_SIZE+SERIAL_BUFF_SIZE, SERIAL_HEADER_SIZE);
-    std::cout << "recv_checksum: " << recv_checksum << ", calc_checksum: " << calc_checksum << std::endl;
+    //std::cout << "recv_checksum: " << recv_checksum << ", calc_checksum: " << calc_checksum << std::endl;
     // 異常時のフロー
     if (recv_checksum != calc_checksum)
     {
